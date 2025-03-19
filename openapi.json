@@ -1,0 +1,32 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Mon API",
+    "version": "1.0.0",
+    "description": "Une API d'exemple"
+  },
+  "paths": {
+    "/hello": {
+      "get": {
+        "summary": "Renvoie un message",
+        "description": "Un simple message de test.",
+        "responses": {
+          "200": {
+            "description": "Succès"
+          }
+        }
+      }
+    },
+    "/users": {
+      "get": {
+        "summary": "Liste des utilisateurs",
+        "description": "Retourne une liste d'utilisateurs enregistrés.",
+        "responses": {
+          "200": {
+            "description": "Liste récupérée avec succès"
+          }
+        }
+      }
+    }
+  }
+}
