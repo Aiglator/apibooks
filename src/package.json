@@ -1,6 +1,6 @@
 {
   "name": "apibooks",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "description": "Documentation automatique pour API Express",
   "main": "index.js",
   "repository": {

@@ -2,10 +2,11 @@ const express = require("express");
 const path = require("path");
 
 class ExpressApiDoc {
-  constructor(app) {
+  constructor(app, options = {}) {
     this.app = app;
     this.routes = [];
     this.docs = {}; // Stockage des documentations des endpoints
+    this.endpoint = options.endpoint || "/api-docs"; // ✅ Endpoint personnalisable
 
     // Hook sur les routes existantes
     this._hookRoutes();
@@ -40,10 +41,9 @@ class ExpressApiDoc {
         <meta charset="utf-8"/>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Documentation API</title>
-        <link rel="stylesheet" href="/style.css"> <!-- ✅ Chemin correct pour CSS -->
+        <link rel="stylesheet" href="/style.css">
       </head>
       <body>
-        <!-- Sidebar -->
         <div class="sidebar">
           <h1>📌 Documentation API</h1>
           <ul>
@@ -58,7 +58,6 @@ class ExpressApiDoc {
           <button id="darkModeToggle">🌙 Mode Sombre</button>
         </div>
 
-        <!-- Contenu principal -->
         <div class="main-content">
           <h2>Endpoints</h2>
           <div class="routes">
@@ -96,7 +95,7 @@ class ExpressApiDoc {
     });
 
     html += `</div></div>
-        <script src="/script.js"></script> <!-- ✅ Chemin correct pour JS -->
+        <script src="/script.js"></script>
       </body>
     </html>
     `;
@@ -104,17 +103,17 @@ class ExpressApiDoc {
   }
 
   serveDocumentation() {
-    this.app.get("/api-docs", (req, res) => {
+    this.app.get(this.endpoint, (req, res) => {
       res.send(this.generateHTML());
     });
 
-    // 📌 Correction : Servir les fichiers statiques directement à la racine
+    // Servir les fichiers statiques (style.css, script.js, etc.)
     this.app.use("/", express.static(path.join(__dirname)));
   }
 }
 
-module.exports = (app) => {
-  const apiDoc = new ExpressApiDoc(app);
+module.exports = (app, options = {}) => {
+  const apiDoc = new ExpressApiDoc(app, options);
   apiDoc.serveDocumentation();
   return apiDoc;
 };
