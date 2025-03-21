@@ -3,17 +3,16 @@ const path = require("path");
 
 class ExpressApiDoc {
   constructor(app) {
-    this.app = app || express(); // Utilise une instance existante ou crée une nouvelle
+    if (!app) {
+      throw new Error("⚠️ Erreur : Une instance d'Express est requise !");
+    }
+
+    this.app = app;
     this.routes = [];
-    this.docs = {}; // Stockage de la documentation des endpoints
+    this.docs = {};
 
     this._hookRoutes();
     this.serveDocumentation();
-
-    // Démarre le serveur si aucune application Express principale n'est définie
-    if (!app) {
-      this._startServer();
-    }
   }
 
   requireDocs(endpoint, specifications) {
@@ -32,7 +31,6 @@ class ExpressApiDoc {
       if (middleware.route) {
         const routePath = middleware.route.path;
         const methods = Object.keys(middleware.route.methods).map((m) => m.toUpperCase());
-
         this.routes.push({ path: routePath, methods });
       }
     });
@@ -46,7 +44,7 @@ class ExpressApiDoc {
         <meta charset="utf-8"/>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Documentation API</title>
-        <link rel="stylesheet" href="style.css"> 
+        <link rel="stylesheet" href="style.css">
       </head>
       <body>
         <div class="sidebar">
@@ -111,15 +109,8 @@ class ExpressApiDoc {
       res.send(this.generateHTML());
     });
 
-    // Sert les fichiers statiques depuis le dossier `apibooks`
-    this.app.use("/api-docs", express.static(__dirname));
-  }
-
-  _startServer() {
-    const PORT = process.env.PORT || 3000;
-    this.app.listen(PORT, () => {
-      console.log(`✅ Serveur de documentation disponible sur http://localhost:${PORT}/api-docs`);
-    });
+    // 📌 Correction : charge les fichiers statiques depuis le même dossier que `index.js`
+    this.app.use("/api-docs", express.static(path.join(__dirname)));
   }
 }
 
