@@ -36,4 +36,4 @@ doc.requireDocs("/user", {
   }
 });
 
-app.listen(3000, () => console.log("Serveur sur http://localhost:3000/api-docs"));
+app.listen(3002, () => console.log("Serveur sur http://localhost:3002/api-docs"));

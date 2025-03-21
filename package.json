@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "apibooks": "^1.1.2",
     "express-api-doc": "^0.0.12",
     "tailwindcss": "^4.0.14"
   }

@@ -3,16 +3,12 @@ const path = require("path");
 
 class ExpressApiDoc {
   constructor(app) {
-    if (!app) {
-      throw new Error("⚠️ Erreur : Une instance d'Express est requise !");
-    }
-
     this.app = app;
     this.routes = [];
-    this.docs = {};
+    this.docs = {}; // Stockage des documentations des endpoints
 
+    // Hook sur les routes existantes
     this._hookRoutes();
-    this.serveDocumentation();
   }
 
   requireDocs(endpoint, specifications) {
@@ -23,14 +19,14 @@ class ExpressApiDoc {
     const originalRouter = this.app._router;
 
     if (!originalRouter) {
-      console.warn("⚠️ Aucune route définie dans Express au moment de l'initialisation.");
-      return;
+      throw new Error("Impossible d'intercepter les routes d'Express.");
     }
 
     originalRouter.stack.forEach((middleware) => {
       if (middleware.route) {
         const routePath = middleware.route.path;
         const methods = Object.keys(middleware.route.methods).map((m) => m.toUpperCase());
+
         this.routes.push({ path: routePath, methods });
       }
     });
@@ -44,9 +40,10 @@ class ExpressApiDoc {
         <meta charset="utf-8"/>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Documentation API</title>
-        <link rel="stylesheet" href="style.css">
+        <link rel="stylesheet" href="/style.css"> <!-- ✅ Chemin correct pour CSS -->
       </head>
       <body>
+        <!-- Sidebar -->
         <div class="sidebar">
           <h1>📌 Documentation API</h1>
           <ul>
@@ -60,6 +57,8 @@ class ExpressApiDoc {
           </ul>
           <button id="darkModeToggle">🌙 Mode Sombre</button>
         </div>
+
+        <!-- Contenu principal -->
         <div class="main-content">
           <h2>Endpoints</h2>
           <div class="routes">
@@ -97,7 +96,7 @@ class ExpressApiDoc {
     });
 
     html += `</div></div>
-        <script src="script.js"></script>
+        <script src="/script.js"></script> <!-- ✅ Chemin correct pour JS -->
       </body>
     </html>
     `;
@@ -109,9 +108,13 @@ class ExpressApiDoc {
       res.send(this.generateHTML());
     });
 
-    // 📌 Correction : charge les fichiers statiques depuis le même dossier que `index.js`
-    this.app.use("/api-docs", express.static(path.join(__dirname)));
+    // 📌 Correction : Servir les fichiers statiques directement à la racine
+    this.app.use("/", express.static(path.join(__dirname)));
   }
 }
 
-module.exports = (app) => new ExpressApiDoc(app);
+module.exports = (app) => {
+  const apiDoc = new ExpressApiDoc(app);
+  apiDoc.serveDocumentation();
+  return apiDoc;
+};
