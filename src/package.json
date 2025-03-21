@@ -1,5 +1,5 @@
 {
-  "name": "express-api-doc",
+  "name": "apibooks",
   "version": "1.0.0",
   "description": "Documentation automatique pour API Express",
   "main": "src/index.js",

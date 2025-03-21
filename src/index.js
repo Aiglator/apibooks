@@ -3,12 +3,17 @@ const path = require("path");
 
 class ExpressApiDoc {
   constructor(app) {
-    this.app = app;
+    this.app = app || express(); // Utilise une instance existante ou crée une nouvelle
     this.routes = [];
-    this.docs = {}; // Store documentation for endpoints
+    this.docs = {}; // Stockage de la documentation des endpoints
 
-    // Hook sur les routes existantes
     this._hookRoutes();
+    this.serveDocumentation();
+
+    // Démarre le serveur si aucune application Express principale n'est définie
+    if (!app) {
+      this._startServer();
+    }
   }
 
   requireDocs(endpoint, specifications) {
@@ -19,7 +24,8 @@ class ExpressApiDoc {
     const originalRouter = this.app._router;
 
     if (!originalRouter) {
-      throw new Error("Impossible d'intercepter les routes d'Express.");
+      console.warn("⚠️ Aucune route définie dans Express au moment de l'initialisation.");
+      return;
     }
 
     originalRouter.stack.forEach((middleware) => {
@@ -40,10 +46,9 @@ class ExpressApiDoc {
         <meta charset="utf-8"/>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Documentation API</title>
-        <link rel="stylesheet" href="style.css"> <!-- Link to external CSS -->
+        <link rel="stylesheet" href="style.css"> 
       </head>
       <body>
-        <!-- Sidebar -->
         <div class="sidebar">
           <h1>📌 Documentation API</h1>
           <ul>
@@ -57,8 +62,6 @@ class ExpressApiDoc {
           </ul>
           <button id="darkModeToggle">🌙 Mode Sombre</button>
         </div>
-
-        <!-- Contenu principal -->
         <div class="main-content">
           <h2>Endpoints</h2>
           <div class="routes">
@@ -96,8 +99,7 @@ class ExpressApiDoc {
     });
 
     html += `</div></div>
-
-        <script src="script.js"></script> <!-- Link to external JavaScript -->
+        <script src="script.js"></script>
       </body>
     </html>
     `;
@@ -109,12 +111,16 @@ class ExpressApiDoc {
       res.send(this.generateHTML());
     });
 
-    this.app.use("/api-docs", express.static(path.join(__dirname)));
+    // Sert les fichiers statiques depuis le dossier `apibooks`
+    this.app.use("/api-docs", express.static(__dirname));
+  }
+
+  _startServer() {
+    const PORT = process.env.PORT || 3000;
+    this.app.listen(PORT, () => {
+      console.log(`✅ Serveur de documentation disponible sur http://localhost:${PORT}/api-docs`);
+    });
   }
 }
 
-module.exports = (app) => {
-  const apiDoc = new ExpressApiDoc(app);
-  apiDoc.serveDocumentation();
-  return apiDoc; // Ensure the instance is returned
-};
+module.exports = (app) => new ExpressApiDoc(app);
