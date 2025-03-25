@@ -1,21 +1,32 @@
 {
   "name": "apibooks",
-  "version": "1.1.5",
+  "version": "1.5.0",
   "description": "Documentation automatique pour API Express",
   "main": "index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ton-github/express-api-doc.git"
+    "url": "https://github.com/Aiglator/apibooks"
   },
   "keywords": [
     "express",
     "api",
     "documentation",
-    "swagger"
+    "swagger",
+    "openapi",
+    "tailwindcss"
   ],
   "author": "Rayan Chattaoui",
   "license": "MIT",
+  "scripts": {
+    "build:css": "npx tailwindcss -i style.css -o output.css --minify",
+    "start": "node server.js"
+  },
   "dependencies": {
     "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.1",
+    "postcss": "^8.4.21",
+    "autoprefixer": "^10.4.14"
   }
 }

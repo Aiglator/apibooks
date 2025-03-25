@@ -19,7 +19,7 @@
     },
     "/users": {
       "get": {
-        "summary": "Liste des utilisateurs",
+        "summary": "Listee des utilisateurs",
         "description": "Retourne une liste d'utilisateurs enregistrés.",
         "responses": {
           "200": {

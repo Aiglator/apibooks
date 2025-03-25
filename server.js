@@ -1,39 +1,45 @@
 const express = require("express");
-const apiDoc = require("./src/index");
+const apiDoc = require("apibooks");
 
 const app = express();
 
-// Define routes
+// --- ROUTES ---
 app.get("/hello", (req, res) => {
   res.json({ message: "Hello, World!" });
 });
 
 app.post("/user", (req, res) => {
-  res.json({ message: "Utilisateur créé" });
+  res.json({ message: "User created" });
 });
 
-// Initialize documentation after routes are defined
-const doc = apiDoc(app);
+// --- DOC API (génération automatique et accessible sur /docs) ---
+const doc = apiDoc(app, {
+  name: "Documentation API",
+  endpoint: "/docs" // accessible ici : http://localhost:3000/docs
+});
 
+// --- Ajout de documentation ---
 doc.requireDocs("/hello", {
   description: "Renvoie un message de bienvenue.",
   responses: {
-    "200": `{
-      "message": "Hello, World!"
-    }`,
+    "200": `{ "message": "Hello, World!" }`,
     "500": "Erreur serveur"
   }
 });
 
 doc.requireDocs("/user", {
-  description: "Crée un nouvel utilisateur.",
-  parameters: [{ name: "name", type: "string", description: "Nom de l'utilisateur" }],
+  description: "Crée un utilisateur.",
+  parameters: [
+    { name: "name", type: "string", description: "Nom de l'utilisateur" }
+  ],
   responses: {
-    "201": `{
-      "message": "Utilisateur créé"
-    }`,
-    "400": "Mauvaise requête"
+    "201": `{ "message": "User created" }`,
+    "400": "Requête invalide"
   }
 });
 
-app.listen(3002, () => console.log("Serveur sur http://localhost:3002/api-docs"));
+// --- Lancement du serveur ---
+app.listen(3000, () => {
+  console.log("✅ Serveur démarré : http://localhost:3000");
+  console.log("📚 Documentation : http://localhost:3000/docs");
+});
