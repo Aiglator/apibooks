@@ -7,14 +7,29 @@ class ExpressApiDoc {
     this.app = app;
     this.routes = [];
     this.docs = {};
+    this._docsCallbacks = [];
+    this._reloadQueue = false;
+
     this.options = options;
     this.endpoint = options.endpoint || "/docs";
     this.name = options.name || "Documentation API";
     this.openapiPath = options.openapi || path.join(process.cwd(), "openapi.json");
 
     this._hookRoutes(app._router);
-    this.loadFromOpenApi(this.openapiPath);
+
+    if (this.options.requireDocs?.openapi !== false) {
+      this.loadFromOpenApi(this.openapiPath);
+    }
+
     this.serveDocumentation();
+
+    if (options.requireDocs?.autoload) {
+      this._setupFastWatchers();
+    }
+
+    if (options.requireDocs?.hotReload) {
+      this._startHotReload();
+    }
   }
 
   requireDocs(endpoint, methodOrSpec, maybeSpec) {
@@ -25,39 +40,50 @@ class ExpressApiDoc {
     if (!this.docs[normalizedPath]) this.docs[normalizedPath] = {};
     if (method) this.docs[normalizedPath][method] = spec;
     else this.docs[normalizedPath]["ALL"] = spec;
+
+    if (this.options.requireDocs?.autoload) {
+      this._docsCallbacks.push(() => {
+        if (!this.docs[normalizedPath]) this.docs[normalizedPath] = {};
+        if (method) this.docs[normalizedPath][method] = spec;
+        else this.docs[normalizedPath]["ALL"] = spec;
+      });
+    }
   }
 
-  loadFromOpenApi(openApiPath) {
+  async loadFromOpenApi(openApiPath) {
     if (!fs.existsSync(openApiPath)) return;
+    try {
+      const raw = await fs.promises.readFile(openApiPath, "utf8");
+      const spec = JSON.parse(raw);
+      if (!spec.paths) return;
 
-    const raw = fs.readFileSync(openApiPath, "utf8");
-    const spec = JSON.parse(raw);
-    if (!spec.paths) return;
-
-    Object.entries(spec.paths).forEach(([path, methods]) => {
-      const normalizedPath = this._normalizePath(path);
-      Object.entries(methods).forEach(([method, data]) => {
-        const upperMethod = method.toUpperCase();
-        const parameters = (data.parameters || []).map(p => ({
-          name: p.name,
-          type: p.schema?.type || "string",
-          description: p.description || ""
-        }));
-        const responses = {};
-        if (data.responses) {
-          Object.entries(data.responses).forEach(([code, res]) => {
-            responses[code] = typeof res === "string"
-              ? res
-              : res.description || JSON.stringify(res.content || {}, null, 2);
+      Object.entries(spec.paths).forEach(([path, methods]) => {
+        const normalizedPath = this._normalizePath(path);
+        Object.entries(methods).forEach(([method, data]) => {
+          const upperMethod = method.toUpperCase();
+          const parameters = (data.parameters || []).map(p => ({
+            name: p.name,
+            type: p.schema?.type || "string",
+            description: p.description || ""
+          }));
+          const responses = {};
+          if (data.responses) {
+            Object.entries(data.responses).forEach(([code, res]) => {
+              responses[code] = typeof res === "string"
+                ? res
+                : res.description || JSON.stringify(res.content || {}, null, 2);
+            });
+          }
+          this.requireDocs(normalizedPath, upperMethod, {
+            description: data.description || "Aucune description",
+            parameters,
+            responses
           });
-        }
-        this.requireDocs(normalizedPath, upperMethod, {
-          description: data.description || "Aucune description",
-          parameters,
-          responses
         });
       });
-    });
+    } catch (err) {
+      console.error("[apibooks] ❌ Erreur chargement openapi.json:", err.message);
+    }
   }
 
   _hookRoutes(router, prefix = "") {
@@ -161,13 +187,86 @@ class ExpressApiDoc {
   }
 
   serveDocumentation() {
-    // 1. Serveur dynamique de la page HTML sur l’endpoint
     this.app.get(this.endpoint, (req, res) => {
       res.send(this.generateHTML());
     });
 
-    // 2. Fichiers CSS et JS liés (output.css et script.js)
     this.app.use(this.endpoint, express.static(path.join(__dirname)));
+  }
+
+  _startHotReload() {
+    const target = process.argv[1];
+    console.log("[apibooks] 🧪 Watching file:", target);
+
+    const reload = async () => {
+      console.log("[apibooks] 🔁 Reload déclenché...");
+      try {
+        const raw = await fs.promises.readFile(target, "utf8");
+        const matches = [...raw.matchAll(/doc\.requireDocs\(([\s\S]*?)\);/g)];
+        const blocks = matches.map(m => m[0]);
+
+        console.log(`[apibooks] 📦 Blocs détectés : ${blocks.length}`);
+
+        this.docs = {};
+
+        for (let code of blocks) {
+          try {
+            code = code.replace(/doc\./g, "this."); // remplace doc.requireDocs() par this.requireDocs()
+            eval(code);
+          } catch (err) {
+            console.warn("[apibooks] ⚠️ Erreur d’exécution dans requireDocs:", err.message);
+          }
+        }
+
+        console.log(`[apibooks] ✅ ${blocks.length} bloc(s) requireDocs rechargé(s).`);
+      } catch (err) {
+        console.error("[apibooks] ❌ Erreur lecture fichier :", err.message);
+      }
+    };
+
+    if (fs.existsSync(target)) {
+      console.log("[apibooks] 👀 Watch activé !");
+      fs.watch(target, { persistent: true }, () => reload());
+    } else {
+      console.warn("[apibooks] ❌ Fichier introuvable pour le hot reload.");
+    }
+  }
+
+  _setupFastWatchers() {
+    const targetFile = path.join(process.cwd(), process.argv[1]);
+    const openapiFile = this.openapiPath;
+
+    const reload = async (source) => {
+      if (this._reloadQueue) return;
+      this._reloadQueue = true;
+
+      setTimeout(async () => {
+        this.docs = {};
+
+        if (this.options.requireDocs?.openapi !== false && fs.existsSync(openapiFile)) {
+          await this.loadFromOpenApi(openapiFile);
+        }
+
+        for (const callback of this._docsCallbacks) {
+          try {
+            callback();
+          } catch (err) {
+            console.error("[apibooks] ❌ Erreur requireDocs:", err);
+          }
+        }
+
+        console.log(`[apibooks] 🔄 Reload déclenché (${source}) ✔`);
+        this._reloadQueue = false;
+      }, 100);
+    };
+
+    if (fs.existsSync(targetFile)) {
+      fs.watch(targetFile, () => reload("server.js"));
+    }
+
+    if (this.options.requireDocs?.openapi !== false && fs.existsSync(openapiFile)) {
+      fs.watch(openapiFile, () => reload("openapi.json"));
+    }
   }
 }
 

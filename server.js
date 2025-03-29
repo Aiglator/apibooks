@@ -1,26 +1,35 @@
 const express = require("express");
-const apiDoc = require("apibooks");
-
+const apiDoc = require("./src/index.js");
 const app = express();
 
-// --- ROUTES ---
+app.use(express.json());
+
+// --- ROUTES définies manuellement ---
 app.get("/hello", (req, res) => {
-  res.json({ message: "Hello, World!" });
+  res.status(200).json({ message: "Hello, World!" });
 });
 
-app.post("/user", (req, res) => {
-  res.json({ message: "User created" });
+app.post("/usere", (req, res) => {
+  const { name } = req.body;
+  if (!name) {
+    return res.status(400).json({ error: "Le nom est requis" });
+  }
+  res.status(201).json({ message: "User created", name });
 });
 
-// --- DOC API (génération automatique et accessible sur /docs) ---
+// --- Initialisation de la documentation ---
 const doc = apiDoc(app, {
   name: "Documentation API",
-  endpoint: "/docs" // accessible ici : http://localhost:3000/docs
+  endpoint: "/docse",
+  requireDocs: {
+    hotReload: true,   // ✅ Hot reload ciblé sur requireDocs()
+    openapi: false     // ❌ Pas de chargement automatique du fichier openapi.json
+  }
 });
 
-// --- Ajout de documentation ---
+// --- Enregistrement des docs ---
 doc.requireDocs("/hello", {
-  description: "Renvoie un message de bienvenue.",
+  description: "Renvoiel un message de bienvenue.",
   responses: {
     "200": `{ "message": "Hello, World!" }`,
     "500": "Erreur serveur"
@@ -30,16 +39,21 @@ doc.requireDocs("/hello", {
 doc.requireDocs("/user", {
   description: "Crée un utilisateur.",
   parameters: [
-    { name: "name", type: "string", description: "Nom de l'utilisateur" }
+    {
+      name: "name",
+      type: "string",
+      description: "Nom de l'utilisateur",
+      required: true
+    }
   ],
   responses: {
-    "201": `{ "message": "User created" }`,
-    "400": "Requête invalide"
+    "201": `{ "message": "User created", "name": "John" }`,
+    "400": `{ "error": "Le nom est requis" }`
   }
 });
 
-// --- Lancement du serveur ---
+// --- Démarrage du serveur ---
 app.listen(3000, () => {
   console.log("✅ Serveur démarré : http://localhost:3000");
-  console.log("📚 Documentation : http://localhost:3000/docs");
+  console.log("📚 Documentation : http://localhost:3000/docse");
 });

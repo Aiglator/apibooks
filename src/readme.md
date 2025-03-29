@@ -51,7 +51,11 @@ app.post("/user", (req, res) => {
 // --- DOC API (automatic generation accessible at /docs) ---
 const doc = apiDoc(app, {
   name: "Documentation API",
-  endpoint: "/docs" // accessible at: http://localhost:3000/docs
+  endpoint: "/docs",
+  requireDocs: {
+    hotReload: true, // 🚀 Reloads requireDocs when this file changes
+    openapi: false   // ❌ Disable OpenAPI file loading
+  }
 });
 
 // --- Add custom documentation ---
@@ -91,16 +95,19 @@ app.listen(3000, () => {
 - ✅ Sidebar navigation of endpoints
 - ✅ Expandable endpoint details
 - ✅ Easy to integrate and configure
+- ✅ Hot reload support for `requireDocs()` (optional)
 
 ---
 
-### 📎 Options
+### 📌 Options
 
-| Option       | Type     | Default       | Description                              |
-|--------------|----------|----------------|------------------------------------------|
-| `endpoint`   | `string` | `/docs`        | URL path where the documentation appears |
-| `name`       | `string` | `Documentation API` | Title shown at the top            |
-| `openapi`    | `string` | `openapi.json` | Path to OpenAPI file (if available)      |
+| Option                   | Type      | Default         | Description                                          |
+|--------------------------|-----------|------------------|------------------------------------------------------|
+| `endpoint`               | `string`  | `/docs`          | URL path where the documentation appears            |
+| `name`                   | `string`  | `Documentation API` | Title shown at the top                        |
+| `openapi`                | `string`  | `openapi.json`   | Path to OpenAPI file (if available)                 |
+| `requireDocs.hotReload` | `boolean` | `false`          | Enable hot reload of `requireDocs()` blocks         |
+| `requireDocs.autoload`  | `boolean` | `false`          | Use in-code callback-based reload (slower fallback) |
 
 ---
 
@@ -116,4 +123,10 @@ MIT
 
 ---
 
+💡 **Are you using apibooks?**  
+Support the project by [⭐️ starring the repo](https://github.com/Aiglator/apibooks) — it means a lot!
+
+---
+
 Happy documenting! ✨
+

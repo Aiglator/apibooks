@@ -8,11 +8,11 @@
   "paths": {
     "/hello": {
       "get": {
-        "summary": "Renvoie un message",
-        "description": "Un simple message de test.",
+        "summary": "Renvoirrrre un message",
+        "description": "Un simple messdage de test.",
         "responses": {
           "200": {
-            "description": "Succès"
+            "description": "eess"
           }
         }
       }
